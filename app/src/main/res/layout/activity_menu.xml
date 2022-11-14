@@ -6,6 +6,12 @@
     tools:context=".activities.MenuActivity"
     android:orientation="vertical">
 
+    <SearchView
+        android:id="@+id/menu_search_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:clickable="true"
+        android:focusable="true" />
 
     <LinearLayout
         android:orientation="horizontal"
@@ -41,6 +47,18 @@
             android:layout_height="wrap_content"
             android:text="0.00"
             android:textSize="25sp" />
+
+        <Space
+            android:layout_width="50sp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            />
+
+        <Button
+            android:id="@+id/menu_order_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Order!" />
 
     </LinearLayout>
 

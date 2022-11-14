@@ -9,6 +9,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -26,18 +28,40 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
-public class MenuGridViewAdapter extends ArrayAdapter<FoodModel> {
+public class MenuGridViewAdapter extends ArrayAdapter<FoodModel> implements Filterable {
 
-    private MenuController menuController;
-    private MenuActivity menuActivity;
+    private final MenuController menuController;
+    private final MenuActivity menuActivity;
+    private List<FoodModel> foodModels;
+    private List<FoodModel> foodModelsFilterList;
+    private ValueFilter valueFilter;
 
     public MenuGridViewAdapter(@NonNull MenuActivity menuActivity, ArrayList<FoodModel> foodModels, MenuController menuController) {
         super(menuActivity, 0, foodModels);
         this.menuController = menuController;
         this.menuActivity = menuActivity;
+        this.foodModels = foodModels;
+        this.foodModelsFilterList = foodModels;
     }
+
+    @Override
+    public int getCount() {
+        return foodModels.size();
+    }
+
+    @Override
+    public FoodModel getItem(int position) {
+        return foodModels.get(position);
+    }
+
+    @Override
+    public long getItemId(int position) {
+        return position;
+    }
+
 
     @NonNull
     @Override
@@ -79,10 +103,7 @@ public class MenuGridViewAdapter extends ArrayAdapter<FoodModel> {
 
         holderValue.addButton.setOnClickListener(v-> {
             this.menuController.setFood(food, holderValue.amount);
-
-
-            this.menuActivity.updateTotalPrice(this.menuController.getTotalPrice());
-
+            this.menuActivity.updateTotalPrice(String.format(Locale.ENGLISH, "%.2f", this.menuController.getTotalPrice()));
         });
 
 
@@ -139,7 +160,7 @@ public class MenuGridViewAdapter extends ArrayAdapter<FoodModel> {
     }
 
     public Bitmap getImageBitmap(String url) {
-        URL imgUrl = null;
+        URL imgUrl;
         Bitmap bitmap = null;
         try {
             imgUrl = new URL(url);
@@ -150,10 +171,8 @@ public class MenuGridViewAdapter extends ArrayAdapter<FoodModel> {
             InputStream is = conn.getInputStream();
             bitmap = BitmapFactory.decodeStream(is);
             is.close();
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         } catch (IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return bitmap;
@@ -188,4 +207,52 @@ public class MenuGridViewAdapter extends ArrayAdapter<FoodModel> {
         }
 
     }
+
+    @Override
+    public Filter getFilter() {
+        if (valueFilter == null) {
+            valueFilter = new ValueFilter();
+        }
+        return valueFilter;
+    }
+
+    private class ValueFilter extends Filter {
+
+        protected boolean keepFood(FoodModel food, String queryString) {
+            Log.d("QUERY STRING", queryString + "?" + food.getName());
+            queryString = queryString.toLowerCase(Locale.ROOT);
+            return food.getName().toLowerCase(Locale.ROOT).contains(queryString)
+                    || food.getFoodType().toLowerCase(Locale.ROOT).contains(queryString);
+        }
+
+        @Override
+        protected FilterResults performFiltering(CharSequence constraint) {
+
+            FilterResults results = new FilterResults();
+            if (constraint != null && constraint.length() > 0) {
+                String queryString = constraint.toString();
+                ArrayList<FoodModel> filteredFoodModels = new ArrayList<>();
+
+                for (FoodModel food : foodModelsFilterList) {
+                    if (keepFood(food, queryString))
+                        filteredFoodModels.add(food);
+                }
+                results.count = filteredFoodModels.size();
+                results.values = filteredFoodModels;
+                System.out.println(results.count);
+
+            } else {
+                results.count = foodModelsFilterList.size();
+                results.values = foodModelsFilterList;
+            }
+            return results;
+        }
+
+        @Override
+        protected void publishResults(CharSequence constraint, FilterResults results) {
+            foodModels = (List<FoodModel>) results.values;
+            notifyDataSetChanged();
+        }
+    }
+
 }
